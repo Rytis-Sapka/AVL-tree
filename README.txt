@@ -1,0 +1,1 @@
+This is an AVL tree created for a university assignment. For now it is only for integers, might update later to have support for all data types.
