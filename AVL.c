@@ -2,6 +2,30 @@
 #include "AVL.h"
 #include <stdbool.h>
 
+typedef struct Node
+{
+    int val;
+    struct Node *left;
+    struct Node *right;
+    int height;
+} Node;
+
+static int max(int a, int b);
+static int height(Node *node);
+static int middleVal(Node *node);
+
+static Node *createNode(int val);
+static Node *leftRotate(Node *top);
+static Node *rightRotate(Node *top);
+
+static Node *insert(Node *node, int val, AVL *tree);
+static Node *delete(Node *node, int val, AVL *tree);
+static void clear(Node *node);
+static bool contains(Node *node, int val);
+static void print(Node *node);
+
+///Utility
+
 int max(int a, int b)
 {
     return (a > b) ? a : b;
@@ -14,6 +38,15 @@ int height(Node *node)
     else
         return node->height;
 }
+
+int middleVal(Node *node)
+{
+    while(node->left != NULL)
+        node = node->left;
+    return node->val;
+}
+
+///Node management
 
 Node *createNode(int val)
 {
@@ -70,12 +103,9 @@ Node *rightRotate(Node *top)
     return mid;
 }
 
-void ins(Node **node, int val)
-{
-    *node = insert(*node, val);
-}
+///Function logic
 
-Node *insert(Node *node, int val)
+Node *insert(Node *node, int val, AVL *tree)
 {
     if (node == NULL)
     {
@@ -83,14 +113,15 @@ Node *insert(Node *node, int val)
     }
     else if (val > node->val)
     {
-        node->right = insert(node->right, val);
+        node->right = insert(node->right, val, tree);
     }
     else if (val < node->val)
     {
-        node->left = insert(node->left, val);
+        node->left = insert(node->left, val, tree);
     }
     else
     {
+        tree->count--;
         return node;
     }
 
@@ -122,25 +153,26 @@ Node *insert(Node *node, int val)
         else
         {
             node->left = leftRotate(node->left);
-            return rightRotate(node->right);
+            return rightRotate(node);
         }
     }
     return node;
 }
 
-Node *delete(Node *node, int val)
+Node *delete(Node *node, int val, AVL *tree)
 {
     if (node == NULL)
     {
+        tree->count++;
         return node;
     }
     else if (val < node->val)
     {
-        node->left = delete(node->left, val);
+        node->left = delete(node->left, val, tree);
     }
     else if (val > node->val)
     {
-        node->right = delete(node->right, val);
+        node->right = delete(node->right, val, tree);
     }
     else
     {
@@ -165,7 +197,7 @@ Node *delete(Node *node, int val)
         else
         {
             node->val = middleVal(node->right);
-            node->right = delete(node->right, node->val);
+            node->right = delete(node->right, node->val, tree);
         }
     }
 
@@ -205,36 +237,6 @@ Node *delete(Node *node, int val)
     return node;
 }
 
-int middleVal(Node *node)
-{
-    while(node->left != NULL)
-        node = node->left;
-    return node->val;
-}
-
-void del(Node **node, int val)
-{
-    *node = delete(*node, val);
-}
-
-bool exists(Node *node, int val)
-{
-    if (node == NULL)
-        return 0;
-    else if (val < node->val)
-        return exists(node->left, val);
-    else if (val > node->val)
-        return exists(node->right, val);
-    else
-        return 1;
-}
-
-void clr(Node **node)
-{
-    clear(*node);
-    *node = NULL;
-}
-
 void clear(Node *node)
 {
     if(node->left != NULL)
@@ -244,3 +246,103 @@ void clear(Node *node)
     free(node);
 }
 
+bool contains(Node *node, int val)
+{
+    if (node == NULL)
+        return 0;
+    else if (val < node->val)
+        return contains(node->left, val);
+    else if (val > node->val)
+        return contains(node->right, val);
+    else
+        return 1;
+}
+
+void print(Node *node)
+{
+    if(node == NULL)
+        return 0;
+    print(node->left);
+    printf("%d ", node->val);
+    print(node->right);
+}
+
+///User functions
+
+AVL create()
+{
+    AVL tree;
+    tree.count = 0;
+    tree.head = NULL;
+    return tree;
+}
+
+void ins(AVL *tree, int val)
+{
+    tree->count++;
+    tree->head = insert(tree->head, val, tree);
+}
+
+void del(AVL *tree, int val)
+{
+    tree->count--;
+    tree->head = delete(tree->head, val, tree);
+}
+
+void clr(AVL *tree)
+{
+    clear(tree->head);
+    tree->head = NULL;
+    tree->count = NULL;
+}
+
+bool exists(AVL tree, int val)
+{
+    return contains(tree.head, val);
+}
+
+bool isEmpty(AVL tree)
+{
+    if(tree.count == 0)
+        return 1;
+    return 0;
+}
+
+int cnt(AVL tree)
+{
+    return tree.count;
+}
+
+void printAll(AVL tree)
+{
+    print(tree.head);
+}
+
+void printByLevel(AVL tree)
+{
+    Node *stack[tree.count / 2 + 1][2];
+    int pos = 0;
+    bool curr = 0;
+    if(tree.head != NULL)
+        stack[pos++][curr] = tree.head;
+    int level = 1;
+    while(pos != 0)
+    {
+        printf("%d: ", level++);
+        for(int i = 0; i < pos; i++)
+            printf("%d ", stack[i][curr]->val);
+        printf("\n");
+
+        curr = !curr;
+        int n = pos;
+        pos = 0;
+
+        for(int i = 0; i < n; i++)
+        {
+            if(stack[i][!curr]->left != NULL)
+                stack[pos++][curr] = stack[i][!curr]->left;
+            if(stack[i][!curr]->right != NULL)
+                stack[pos++][curr] = stack[i][!curr]->right;
+        }
+    }
+}
